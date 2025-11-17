@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class 9 Paragraphs - Full Screen Slider</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0c0e2b 0%, #1a1f4b 50%, #2d1b69 100%);
+            color: #e0e0ff;
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .slider-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            padding: 80px 0; /* Top and bottom padding */
+        }
+
+        .slider-track {
+            display: flex;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+            width: 600%; /* 6 slides now (3 English + 3 Bengali) */
+        }
+
+        .slide {
+            width: 100vw;
+            height: 100%;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 40px;
+            text-align: center;
+        }
+
+        .slide-content {
+            max-width: 900px;
+            width: 90%;
+            background: rgba(15, 17, 41, 0.85);
+            padding: 60px 50px;
+            border-radius: 20px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .slide-title {
+            font-family: 'Cinzel', serif;
+            font-size: 3.5rem;
+            margin-bottom: 40px;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(138, 43, 226, 0.7);
+            position: relative;
+            display: inline-block;
+        }
+
+        .slide-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(to right, #4a00e0, #8a2be2);
+            border-radius: 2px;
+        }
+
+        .slide-text {
+            font-size: 1.4rem;
+            line-height: 1.9;
+            text-align: justify;
+            color: #d0d0ff;
+            margin-bottom: 40px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .bengali-text {
+            font-family: 'Noto Sans Bengali', 'SolaimanLipi', sans-serif;
+            font-size: 1.5rem;
+            line-height: 2.0;
+            text-align: justify;
+            color: #d0d0ff;
+            margin-bottom: 40px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .language-label {
+            display: inline-block;
+            background: rgba(138, 43, 226, 0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            color: #e0e0ff;
+            border: 1px solid rgba(138, 43, 226, 0.5);
+        }
+
+        .slider-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(138, 43, 226, 0.2);
+            border: none;
+            color: rgba(255, 255, 255, 0.9);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+            font-size: 2.5rem;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .slider-nav:hover {
+            color: rgba(255, 255, 255, 1);
+            background: rgba(138, 43, 226, 0.4);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+        }
+
+        .slider-prev {
+            left: 30px;
+        }
+
+        .slider-next {
+            right: 30px;
+        }
+
+        .slider-indicators {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .indicator {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(138, 43, 226, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .indicator.active {
+            background: rgba(138, 43, 226, 0.8);
+            transform: scale(1.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Animated Bubbles */
+        .bubbles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(138, 43, 226, 0.1);
+            animation: float 20s infinite linear;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.2);
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100px) translateX(calc(100vw - 100px)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Scrollbar styling */
+        .slide-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .slide-content::-webkit-scrollbar-track {
+            background: rgba(15, 17, 41, 0.5);
+            border-radius: 10px;
+        }
+
+        .slide-content::-webkit-scrollbar-thumb {
+            background: rgba(138, 43, 226, 0.5);
+            border-radius: 10px;
+        }
+
+        .slide-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(138, 43, 226, 0.7);
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 1024px) {
+            .slide-content {
+                padding: 50px 40px;
+                max-width: 800px;
+            }
+            
+            .slide-title {
+                font-size: 3rem;
+            }
+            
+            .slide-text, .bengali-text {
+                font-size: 1.3rem;
+            }
+            
+            .slider-nav {
+                width: 70px;
+                height: 70px;
+                font-size: 2.2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slider-container {
+                padding: 60px 0;
+            }
+            
+            .slide-content {
+                padding: 40px 30px;
+                max-width: 700px;
+            }
+            
+            .slide-title {
+                font-size: 2.5rem;
+            }
+            
+            .slide-text, .bengali-text {
+                font-size: 1.2rem;
+                line-height: 1.7;
+            }
+            
+            .slider-nav {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+            
+            .slider-prev {
+                left: 20px;
+            }
+            
+            .slider-next {
+                right: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .slider-container {
+                padding: 40px 0;
+            }
+            
+            .slide {
+                padding: 0 20px;
+            }
+            
+            .slide-content {
+                padding: 30px 25px;
+                width: 95%;
+            }
+            
+            .slide-title {
+                font-size: 2rem;
+            }
+            
+            .slide-text, .bengali-text {
+                font-size: 1.1rem;
+                line-height: 1.6;
+                text-align: left;
+            }
+            
+            .slider-nav {
+                width: 50px;
+                height: 50px;
+                font-size: 1.8rem;
+            }
+            
+            .slider-prev {
+                left: 10px;
+            }
+            
+            .slider-next {
+                right: 10px;
+            }
+            
+            .slider-indicators {
+                bottom: 20px;
+            }
+            
+            .indicator {
+                width: 14px;
+                height: 14px;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bubbles" id="bubbles"></div>
+    
+    <div class="slider-container">
+        <button class="slider-nav slider-prev" onclick="prevSlide()">
+            &lt;
+        </button>
+        <button class="slider-nav slider-next" onclick="nextSlide()">
+            &gt;
+        </button>
+        
+        <div class="slider-track" id="sliderTrack">
+            <!-- Slide 1 - Good Manners (English) -->
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="language-label">English</div>
+                    <h1 class="slide-title">Good Manners</h1>
+                    <div class="slide-text">
+                        Good manners help us live happily with others. They show our respect and care for the people around us. Simple actions like saying please and thank you, listening when someone speaks, and helping others in need make a big difference. A well-mannered person creates a friendly and peaceful environment wherever they go. Good manners also help us build strong relationships and earn the trust of others. They reflect our upbringing and character, making social interactions smoother and more pleasant. Practicing good manners daily helps create a positive atmosphere in our homes, schools, and communities.
+                        
+                        <br><br>
+                        Good manners are not just about following rules but about showing genuine consideration for others. They include being punctual, respecting elders, using polite language, and maintaining personal hygiene. When we practice good manners, we contribute to a more harmonious society where everyone feels valued and respected. Teaching good manners to children from a young age helps them develop into responsible and empathetic adults.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 2 - Good Manners (Bengali) -->
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="language-label">বাংলা</div>
+                    <h1 class="slide-title">ভালো আচরণ</h1>
+                    <div class="bengali-text">
+                        ভালো আচরণ আমাদের অন্যদের সাথে সুখে বসবাস করতে সহায়তা করে। এটি আমাদের চারপাশের মানুষের প্রতি আমাদের শ্রদ্ধা ও যত্ন প্রদর্শন করে। দয়া করে ও ধন্যবাদ বলা, যখন কেউ কথা বলে তখন শোনা এবং প্রয়োজনে অন্যদের সাহায্য করার মত সহজ কাজগুলো একটি বিশাল পার্থক্য তৈরি করে। একজন সুরুচিসম্পন্ন ব্যক্তি যেখানেই যায় একটি বন্ধুত্বপূর্ণ ও শান্তিপূর্ণ পরিবেশ তৈরি করে। ভালো আচরণ আমাদের শক্তিশালী সম্পর্ক গড়ে তুলতে এবং অন্যদের আস্থা অর্জন করতেও সাহায্য করে।
+                        
+                        <br><br>
+                        ভালো আচরণ শুধু নিয়ম মেনে চলার বিষয় নয়, বরং অন্যদের প্রতি সত্যিকারের বিবেচনা দেখানোর বিষয়। এগুলোর মধ্যে সময়নিষ্ঠ হওয়া, বড়দের সম্মান করা, ভদ্র ভাষা ব্যবহার করা এবং ব্যক্তিগত স্বাস্থ্যবিধি বজায় রাখা অন্তর্ভুক্ত। যখন আমরা ভালো আচরণ চর্চা করি, আমরা একটি আরও সুষম সমাজে অবদান রাখি যেখানে প্রত্যেকে মূল্যবান ও সম্মানিত বোধ করে। ছোটবেলা থেকেই শিশুদের ভালো আচরণ শেখানো তাদের দায়িত্বশীল ও সহানুভূতিশীল প্রাপ্তবয়স্ক হিসেবে গড়ে উঠতে সাহায্য করে।
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 3 - Environmental Pollution (English) -->
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="language-label">English</div>
+                    <h1 class="slide-title">Environmental Pollution</h1>
+                    <div class="slide-text">
+                        Environmental pollution is a serious problem that harms our air, water, and soil. Smoke from factories and vehicles makes the air dirty, while plastic waste and chemicals pollute rivers and ponds. When the environment becomes polluted, it affects the health of humans, animals, and plants. We must keep our surroundings clean, plant more trees, and use less plastic. Protecting nature is our duty because a clean environment ensures a healthy life for everyone. Pollution leads to various diseases and disturbs the ecological balance. It is crucial to adopt sustainable practices and spread awareness about environmental conservation to protect our planet for future generations.
+                        
+                        <br><br>
+                        The main types of pollution include air pollution, water pollution, soil pollution, noise pollution, and light pollution. Each type has severe consequences on our health and the environment. Air pollution can cause respiratory diseases, while water pollution leads to waterborne illnesses. Soil pollution affects agriculture and food safety. We can combat pollution by reducing waste, recycling materials, using public transportation, and supporting environmental protection initiatives. Every small action counts in preserving our planet.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 4 - Environmental Pollution (Bengali) -->
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="language-label">বাংলা</div>
+                    <h1 class="slide-title">পরিবেশ দূষণ</h1>
+                    <div class="bengali-text">
+                        পরিবেশ দূষণ একটি গুরুতর সমস্যা যা আমাদের বায়ু, জল ও মাটিকে ক্ষতিগ্রস্ত করে। কারখানা ও যানবাহন থেকে নির্গত ধোঁয়া বায়ুকে দূষিত করে, অন্যদিকে প্লাস্টিক বর্জ্য ও রাসায়নিক পদার্থ নদী ও পুকুরকে দূষিত করে। যখন পরিবেশ দূষিত হয়, তখন এটি মানুষ, প্রাণী ও উদ্ভিদের স্বাস্থ্যকে প্রভাবিত করে। আমাদের আমাদের চারপাশ পরিষ্কার রাখতে হবে, আরও গাছ লাগাতে হবে এবং কম প্লাস্টিক ব্যবহার করতে হবে। প্রকৃতিকে রক্ষা করা আমাদের কর্তব্য কারণ একটি পরিষ্কার পরিবেশ সবার জন্য স্বাস্থ্যকর জীবন নিশ্চিত করে।
+                        
+                        <br><br>
+                        দূষণের প্রধান প্রকারগুলির মধ্যে রয়েছে বায়ু দূষণ, জল দূষণ, মাটি দূষণ, শব্দ দূষণ এবং আলো দূষণ। প্রতিটি প্রকারের আমাদের স্বাস্থ্য ও পরিবেশের উপর গুরুতর প্রভাব রয়েছে। বায়ু দূষণ শ্বাসযন্ত্রের রোগ সৃষ্টি করতে পারে, অন্যদিকে জল দূষণ জলবাহিত রোগের দিকে নিয়ে যায়। মাটি দূষণ কৃষি ও খাদ্য নিরাপত্তাকে প্রভাবিত করে। আমরা বর্জ্য হ্রাস করে, উপকরণ পুনর্ব্যবহার করে, গণপরিবহন ব্যবহার করে এবং পরিবেশ সুরক্ষা উদ্যোগগুলো সমর্থন করে দূষণের বিরুদ্ধে লড়াই করতে পারি। আমাদের গ্রহ সংরক্ষণে প্রতিটি ছোট পদক্ষেপ গুরুত্বপূর্ণ।
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 5 - Ideal Student (English) -->
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="language-label">English</div>
+                    <h1 class="slide-title">Ideal Student</h1>
+                    <div class="slide-text">
+                        An ideal student is disciplined, honest, and eager to learn. They pay attention in class, complete their homework on time, and ask questions to clear their doubts. They respect their teachers and classmates and behave well inside and outside school. An ideal student also takes part in sports and other activities to stay active and confident. By managing time well and working hard, they set a good example for others and move closer to success. They balance academics with extracurricular activities and develop a well-rounded personality. An ideal student understands the value of education and strives to achieve their goals with dedication and perseverance.
+                        
+                        <br><br>
+                        Beyond academic excellence, an ideal student possesses qualities like curiosity, creativity, and critical thinking. They are not afraid to challenge themselves and learn from their mistakes. An ideal student also demonstrates leadership skills, empathy towards others, and a sense of social responsibility. They participate in community service and understand their role in making the world a better place. The habits and values cultivated during student life lay the foundation for a successful and meaningful future.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 6 - Ideal Student (Bengali) -->
+            <div class="slide">
+                <div class="slide-content">
+                    <div class="language-label">বাংলা</div>
+                    <h1 class="slide-title">আদর্শ শিক্ষার্থী</h1>
+                    <div class="bengali-text">
+                        একজন আদর্শ শিক্ষার্থী শৃঙ্খলাবদ্ধ, সৎ ও শিখতে আগ্রহী। তারা ক্লাসে মনোযোগ দেয়, সময়মতো তাদের বাড়ির কাজ সম্পন্ন করে এবং তাদের সন্দেহ দূর করতে প্রশ্ন জিজ্ঞাসা করে। তারা তাদের শিক্ষক ও সহপাঠীদের সম্মান করে এবং স্কুলের ভিতরে ও বাইরে ভালো আচরণ করে। একজন আদর্শ শিক্ষার্থী সক্রিয় ও আত্মবিশ্বাসী থাকার জন্য খেলাধুলা ও অন্যান্য কার্যক্রমেও অংশগ্রহণ করে। সময় ভালোভাবে পরিচালনা করে এবং কঠোর পরিশ্রম করে তারা অন্যদের জন্য একটি ভালো উদাহরণ স্থাপন করে এবং সাফল্যের কাছাকাছি পৌঁছায়।
+                        
+                        <br><br>
+                        একাডেমিক সাফল্যের বাইরে, একজন আদর্শ শিক্ষার্থীর মধ্যে কৌতূহল, সৃজনশীলতা ও সমালোচনামূলক চিন্তাভাবনার মতো গুণাবলী থাকে। তারা নিজেদের চ্যালেঞ্জ করতে এবং তাদের ভুলগুলি থেকে শিখতে ভয় পায় না। একজন আদর্শ শিক্ষার্থী নেতৃত্বের দক্ষতা, অন্যদের প্রতি সহানুভূতি এবং সামাজিক দায়িত্ববোধও প্রদর্শন করে। তারা সম্প্রদায় সেবায় অংশগ্রহণ করে এবং বিশ্বকে একটি ভালো জায়গা করতে তাদের ভূমিকা বোঝে। শিক্ষার্থী জীবনে গড়ে ওঠা অভ্যাস ও মূল্যবোধ একটি সফল ও অর্থপূর্ণ ভবিষ্যতের ভিত্তি স্থাপন করে।
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slider-indicators">
+            <div class="indicator active" onclick="goToSlide(0)"></div>
+            <div class="indicator" onclick="goToSlide(1)"></div>
+            <div class="indicator" onclick="goToSlide(2)"></div>
+            <div class="indicator" onclick="goToSlide(3)"></div>
+            <div class="indicator" onclick="goToSlide(4)"></div>
+            <div class="indicator" onclick="goToSlide(5)"></div>
+        </div>
+    </div>
+
+    <script>
+        const sliderTrack = document.getElementById('sliderTrack');
+        const indicators = document.querySelectorAll('.indicator');
+        let currentSlide = 0;
+        const totalSlides = 6; // Updated to 6 slides
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlider();
+            } else {
+                // Loop back to first slide
+                currentSlide = 0;
+                updateSlider();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlider();
+            } else {
+                // Loop to last slide
+                currentSlide = totalSlides - 1;
+                updateSlider();
+            }
+        }
+
+        function goToSlide(slideIndex) {
+            currentSlide = slideIndex;
+            updateSlider();
+        }
+
+        function updateSlider() {
+            // Move the slider track
+            sliderTrack.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            
+            // Update indicators
+            indicators.forEach((indicator, index) => {
+                if (index === currentSlide) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+        }
+
+        // Create animated bubbles
+        document.addEventListener('DOMContentLoaded', function() {
+            const bubblesContainer = document.getElementById('bubbles');
+            const bubbleCount = 15;
+            
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.classList.add('bubble');
+                
+                // Random size
+                const size = Math.random() * 120 + 40;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                
+                // Random position
+                bubble.style.left = `${Math.random() * 100}vw`;
+                
+                // Random animation delay and duration
+                const delay = Math.random() * 20;
+                const duration = Math.random() * 15 + 20;
+                bubble.style.animationDelay = `${delay}s`;
+                bubble.style.animationDuration = `${duration}s`;
+                
+                // Random opacity
+                const opacity = Math.random() * 0.3 + 0.1;
+                bubble.style.opacity = opacity;
+                
+                bubblesContainer.appendChild(bubble);
+            }
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (event.key === 'ArrowRight') {
+                nextSlide();
+            }
+        });
+
+        // Add swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            
+            if (touchEndX < touchStartX - swipeThreshold) {
+                nextSlide();
+            }
+            
+            if (touchEndX > touchStartX + swipeThreshold) {
+                prevSlide();
+            }
+        }
+    </script>
+</body>
+</html>
