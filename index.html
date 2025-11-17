@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class 9 Paragraphs - Full Screen Slider</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>Class 9 Paragraphs - Interactive Slider</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500&family=Noto+Sans+Bengali:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -20,19 +20,70 @@
             overflow-x: hidden;
         }
 
+        /* ===== LOADING ANIMATION ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0c0e2b 0%, #1a1f4b 50%, #2d1b69 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(138, 43, 226, 0.3);
+            border-top-color: #8a2be2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== SLIDER CONTAINER ===== */
         .slider-container {
             width: 100%;
             height: 100vh;
             position: relative;
             overflow: hidden;
-            padding: 80px 0; /* Top and bottom padding */
+            padding: 80px 0;
         }
 
+        /* Screen reader only text */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* ===== SLIDER TRACK ===== */
         .slider-track {
             display: flex;
+            /* Use transform for better performance */
             transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             height: 100%;
-            width: 600%; /* 6 slides now (3 English + 3 Bengali) */
+            width: 900%;
+            will-change: transform;
         }
 
         .slide {
@@ -43,8 +94,14 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 0 40px;
+            padding: 0 20px;
             text-align: center;
+            opacity: 0.4;
+            transition: opacity 0.8s ease;
+        }
+
+        .slide.active {
+            opacity: 1;
         }
 
         .slide-content {
@@ -58,8 +115,17 @@
             backdrop-filter: blur(10px);
             max-height: 90vh;
             overflow-y: auto;
+            position: relative;
+            z-index: 25;
+            transform: scale(0.95);
+            transition: transform 0.8s ease;
         }
 
+        .slide.active .slide-content {
+            transform: scale(1);
+        }
+
+        /* ===== TYPOGRAPHY ===== */
         .slide-title {
             font-family: 'Cinzel', serif;
             font-size: 3.5rem;
@@ -112,6 +178,49 @@
             border: 1px solid rgba(138, 43, 226, 0.5);
         }
 
+        /* ===== VOCABULARY TABLE ===== */
+        .vocabulary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 1.2rem;
+        }
+
+        .vocabulary-table th {
+            background: rgba(138, 43, 226, 0.4);
+            padding: 15px;
+            text-align: left;
+            border: 1px solid rgba(138, 43, 226, 0.5);
+        }
+
+        .vocabulary-table td {
+            padding: 12px 15px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            text-align: left;
+        }
+
+        .vocabulary-table tr:nth-child(even) {
+            background: rgba(138, 43, 226, 0.1);
+        }
+
+        .vocabulary-table tr:hover {
+            background: rgba(138, 43, 226, 0.2);
+            transition: background 0.3s ease;
+        }
+
+        .vocabulary-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            margin: 30px 0 20px 0;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(138, 43, 226, 0.7);
+        }
+
+        .vocabulary-bengali {
+            font-family: 'Noto Sans Bengali', sans-serif;
+        }
+
+        /* ===== NAVIGATION CONTROLS ===== */
         .slider-nav {
             position: absolute;
             top: 50%;
@@ -127,7 +236,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            z-index: 10;
+            z-index: 30;
             font-size: 2.5rem;
             font-weight: bold;
             backdrop-filter: blur(5px);
@@ -141,6 +250,11 @@
             box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
         }
 
+        .slider-nav:focus {
+            outline: 3px solid #8a2be2;
+            outline-offset: 4px;
+        }
+
         .slider-prev {
             left: 30px;
         }
@@ -149,6 +263,25 @@
             right: 30px;
         }
 
+        /* ===== CLICKABLE SCREEN AREAS ===== */
+        .click-area {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 25%;
+            z-index: 20;
+            cursor: pointer;
+        }
+
+        .left-click-area {
+            left: 0;
+        }
+
+        .right-click-area {
+            right: 0;
+        }
+
+        /* ===== INDICATORS ===== */
         .slider-indicators {
             position: absolute;
             bottom: 40px;
@@ -156,7 +289,7 @@
             transform: translateX(-50%);
             display: flex;
             gap: 15px;
-            z-index: 10;
+            z-index: 30;
         }
 
         .indicator {
@@ -169,13 +302,86 @@
             border: 2px solid transparent;
         }
 
+        .indicator:hover {
+            background: rgba(138, 43, 226, 0.5);
+        }
+
+        .indicator:focus {
+            outline: 2px solid #8a2be2;
+            outline-offset: 3px;
+        }
+
         .indicator.active {
             background: rgba(138, 43, 226, 0.8);
             transform: scale(1.3);
             border-color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Animated Bubbles */
+        /* ===== PROGRESS BAR ===== */
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(138, 43, 226, 0.8);
+            width: 0%;
+            transition: width 0.1s linear;
+            z-index: 35;
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
+        }
+
+        /* ===== CONTROLS PANEL ===== */
+        .controls-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+            z-index: 30;
+        }
+
+        .control-btn {
+            background: rgba(138, 43, 226, 0.3);
+            border: 1px solid rgba(138, 43, 226, 0.5);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .control-btn:hover {
+            background: rgba(138, 43, 226, 0.5);
+            transform: scale(1.05);
+        }
+
+        .control-btn:focus {
+            outline: 2px solid #8a2be2;
+            outline-offset: 2px;
+        }
+
+        .control-btn.active {
+            background: rgba(138, 43, 226, 0.6);
+        }
+
+        /* ===== PAGE COUNTER ===== */
+        .page-counter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(138, 43, 226, 0.3);
+            border: 1px solid rgba(138, 43, 226, 0.5);
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            color: #ffffff;
+            backdrop-filter: blur(5px);
+            z-index: 30;
+        }
+
+        /* ===== ANIMATED BUBBLES ===== */
         .bubbles {
             position: fixed;
             top: 0;
@@ -184,6 +390,7 @@
             height: 100%;
             z-index: -1;
             overflow: hidden;
+            pointer-events: none;
         }
 
         .bubble {
@@ -192,6 +399,7 @@
             background: rgba(138, 43, 226, 0.1);
             animation: float 20s infinite linear;
             box-shadow: 0 0 20px rgba(138, 43, 226, 0.2);
+            will-change: transform;
         }
 
         @keyframes float {
@@ -211,7 +419,7 @@
             }
         }
 
-        /* Scrollbar styling */
+        /* ===== SCROLLBAR STYLING ===== */
         .slide-content::-webkit-scrollbar {
             width: 8px;
         }
@@ -230,7 +438,7 @@
             background: rgba(138, 43, 226, 0.7);
         }
 
-        /* Mobile-first responsive design */
+        /* ===== RESPONSIVE DESIGN ===== */
         @media (max-width: 1024px) {
             .slide-content {
                 padding: 50px 40px;
@@ -249,6 +457,10 @@
                 width: 70px;
                 height: 70px;
                 font-size: 2.2rem;
+            }
+            
+            .vocabulary-table {
+                font-size: 1.1rem;
             }
         }
 
@@ -284,6 +496,28 @@
             .slider-next {
                 right: 20px;
             }
+            
+            .click-area {
+                width: 20%;
+            }
+            
+            .vocabulary-table {
+                font-size: 1rem;
+            }
+            
+            .vocabulary-table th, .vocabulary-table td {
+                padding: 10px 12px;
+            }
+
+            .page-counter {
+                font-size: 0.9rem;
+                padding: 10px 20px;
+            }
+
+            .control-btn {
+                font-size: 0.8rem;
+                padding: 10px 15px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -292,7 +526,7 @@
             }
             
             .slide {
-                padding: 0 20px;
+                padding: 0 15px;
             }
             
             .slide-content {
@@ -324,151 +558,410 @@
                 right: 10px;
             }
             
+            .click-area {
+                width: 15%;
+            }
+            
             .slider-indicators {
                 bottom: 20px;
+                gap: 10px;
             }
             
             .indicator {
                 width: 14px;
                 height: 14px;
             }
+            
+            .vocabulary-table {
+                font-size: 0.9rem;
+            }
+            
+            .vocabulary-table th, .vocabulary-table td {
+                padding: 8px 10px;
+            }
+
+            .page-counter {
+                font-size: 0.8rem;
+                padding: 8px 15px;
+                top: 10px;
+                left: 10px;
+            }
+
+            .controls-panel {
+                top: 10px;
+                right: 10px;
+                gap: 10px;
+            }
+
+            .control-btn {
+                font-size: 0.7rem;
+                padding: 8px 12px;
+            }
+        }
+
+        /* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+        @media (prefers-reduced-motion: reduce) {
+            .slider-track,
+            .slide,
+            .slide-content,
+            .slider-nav,
+            .control-btn,
+            .indicator {
+                transition: none;
+            }
+
+            .bubble {
+                animation: none;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .slide-content {
+                border: 2px solid #8a2be2;
+            }
+
+            .slider-nav,
+            .control-btn {
+                border: 2px solid #ffffff;
+            }
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="bubbles" id="bubbles"></div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Animated Bubbles Background -->
+    <div class="bubbles" id="bubbles" aria-hidden="true"></div>
     
-    <div class="slider-container">
-        <button class="slider-nav slider-prev" onclick="prevSlide()">
+    <!-- Main Slider Container -->
+    <div class="slider-container" role="region" aria-label="Educational content slider" aria-live="polite">
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+        <!-- Page Counter -->
+        <div class="page-counter" id="pageCounter" aria-live="polite">
+            <span class="sr-only">Slide </span>
+            <span id="currentPage">1</span> / <span id="totalPages">9</span>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            <button class="control-btn" id="autoplayBtn" onclick="toggleAutoplay()" aria-label="Toggle autoplay">
+                <span id="autoplayText">▶ Auto</span>
+            </button>
+        </div>
+
+        <!-- Clickable areas for easier navigation -->
+        <div class="click-area left-click-area" onclick="prevSlide()" aria-hidden="true"></div>
+        <div class="click-area right-click-area" onclick="nextSlide()" aria-hidden="true"></div>
+        
+        <!-- Navigation Buttons -->
+        <button class="slider-nav slider-prev" onclick="prevSlide()" aria-label="Previous slide" tabindex="0">
             &lt;
         </button>
-        <button class="slider-nav slider-next" onclick="nextSlide()">
+        <button class="slider-nav slider-next" onclick="nextSlide()" aria-label="Next slide" tabindex="0">
             &gt;
         </button>
         
+        <!-- Slider Track -->
         <div class="slider-track" id="sliderTrack">
             <!-- Slide 1 - Good Manners (English) -->
-            <div class="slide">
+            <div class="slide active" role="tabpanel" aria-labelledby="slide-1-title">
                 <div class="slide-content">
-                    <div class="language-label">English</div>
-                    <h1 class="slide-title">Good Manners</h1>
+                    <div class="language-label">English - Simple Version</div>
+                    <h1 class="slide-title" id="slide-1-title">Good Manners</h1>
                     <div class="slide-text">
-                        Good manners help us live happily with others. They show our respect and care for the people around us. Simple actions like saying please and thank you, listening when someone speaks, and helping others in need make a big difference. A well-mannered person creates a friendly and peaceful environment wherever they go. Good manners also help us build strong relationships and earn the trust of others. They reflect our upbringing and character, making social interactions smoother and more pleasant. Practicing good manners daily helps create a positive atmosphere in our homes, schools, and communities.
+                        Good manners help us live well with others. They show we respect and care for people. Simple things like saying please and thank you, listening when others talk, and helping those in need make a big difference. A person with good manners makes a friendly and calm place wherever they go. Good manners help us make strong friendships and earn trust from others. They show our good upbringing and make social life easier and nicer. Using good manners every day helps make our homes, schools, and communities better places.
                         
                         <br><br>
-                        Good manners are not just about following rules but about showing genuine consideration for others. They include being punctual, respecting elders, using polite language, and maintaining personal hygiene. When we practice good manners, we contribute to a more harmonious society where everyone feels valued and respected. Teaching good manners to children from a young age helps them develop into responsible and empathetic adults.
+                        Good manners are not just about rules. They are about truly caring for others. They include being on time, respecting older people, using polite words, and keeping clean. When we use good manners, we help make society more peaceful where everyone feels important and respected. Teaching children good manners from a young age helps them grow into caring and responsible adults.
                     </div>
                 </div>
             </div>
             
             <!-- Slide 2 - Good Manners (Bengali) -->
-            <div class="slide">
+            <div class="slide" role="tabpanel" aria-labelledby="slide-2-title">
                 <div class="slide-content">
-                    <div class="language-label">বাংলা</div>
-                    <h1 class="slide-title">ভালো আচরণ</h1>
+                    <div class="language-label">বাংলা - সরল সংস্করণ</div>
+                    <h1 class="slide-title" id="slide-2-title">ভালো আচরণ</h1>
                     <div class="bengali-text">
-                        ভালো আচরণ আমাদের অন্যদের সাথে সুখে বসবাস করতে সহায়তা করে। এটি আমাদের চারপাশের মানুষের প্রতি আমাদের শ্রদ্ধা ও যত্ন প্রদর্শন করে। দয়া করে ও ধন্যবাদ বলা, যখন কেউ কথা বলে তখন শোনা এবং প্রয়োজনে অন্যদের সাহায্য করার মত সহজ কাজগুলো একটি বিশাল পার্থক্য তৈরি করে। একজন সুরুচিসম্পন্ন ব্যক্তি যেখানেই যায় একটি বন্ধুত্বপূর্ণ ও শান্তিপূর্ণ পরিবেশ তৈরি করে। ভালো আচরণ আমাদের শক্তিশালী সম্পর্ক গড়ে তুলতে এবং অন্যদের আস্থা অর্জন করতেও সাহায্য করে।
+                        ভালো আচরণ আমাদের অন্যদের সাথে ভালোভাবে বাঁচতে সাহায্য করে। এটা দেখায় যে আমরা মানুষকে সম্মান করি এবং তাদের যত্ন নিই। দয়া করে এবং ধন্যবাদ বলা, অন্যদের কথা বলার সময় শোনা, এবং প্রয়োজনে অন্যদের সাহায্য করার মতো সহজ জিনিসগুলি একটি বড় পার্থক্য তৈরি করে। ভালো আচরণ যুক্ত ব্যক্তি যেখানেই যায় একটি বন্ধুত্বপূর্ণ এবং শান্তিপূর্ণ জায়গা তৈরি করে। ভালো আচরণ আমাদের শক্তিশালী বন্ধুত্ব গড়তে এবং অন্যদের কাছ থেকে আস্থা অর্জন করতে সাহায্য করে। এগুলি আমাদের ভালো লালন-পালন দেখায় এবং সামাজিক জীবনকে সহজ এবং সুন্দর করে। প্রতিদিন ভালো আচরণ ব্যবহার করে আমরা আমাদের বাড়ি, স্কুল এবং সম্প্রদায়কে আরও ভালো জায়গা করতে সাহায্য করি।
                         
                         <br><br>
-                        ভালো আচরণ শুধু নিয়ম মেনে চলার বিষয় নয়, বরং অন্যদের প্রতি সত্যিকারের বিবেচনা দেখানোর বিষয়। এগুলোর মধ্যে সময়নিষ্ঠ হওয়া, বড়দের সম্মান করা, ভদ্র ভাষা ব্যবহার করা এবং ব্যক্তিগত স্বাস্থ্যবিধি বজায় রাখা অন্তর্ভুক্ত। যখন আমরা ভালো আচরণ চর্চা করি, আমরা একটি আরও সুষম সমাজে অবদান রাখি যেখানে প্রত্যেকে মূল্যবান ও সম্মানিত বোধ করে। ছোটবেলা থেকেই শিশুদের ভালো আচরণ শেখানো তাদের দায়িত্বশীল ও সহানুভূতিশীল প্রাপ্তবয়স্ক হিসেবে গড়ে উঠতে সাহায্য করে।
+                        ভালো আচরণ শুধু নিয়মের বিষয় নয়। এগুলি অন্যদের জন্য সত্যিকারের যত্ন নেওয়ার বিষয়। এগুলির মধ্যে সময়মতো আসা, বয়স্ক মানুষদের সম্মান করা, ভদ্র শব্দ ব্যবহার করা এবং পরিষ্কার থাকা অন্তর্ভুক্ত। যখন আমরা ভালো আচরণ ব্যবহার করি, তখন আমরা সমাজকে আরও শান্তিপূর্ণ করতে সাহায্য করি যেখানে সবাই নিজেকে গুরুত্বপূর্ণ এবং সম্মানিত বোধ করে। ছোটবেলা থেকেই শিশুদের ভালো আচরণ শেখানো তাদের যত্নশীল এবং দায়িত্বশীল প্রাপ্তবয়স্ক হিসেবে বড় হতে সাহায্য করে।
                     </div>
                 </div>
             </div>
             
-            <!-- Slide 3 - Environmental Pollution (English) -->
-            <div class="slide">
+            <!-- Slide 3 - Good Manners Vocabulary -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-3-title">
                 <div class="slide-content">
-                    <div class="language-label">English</div>
-                    <h1 class="slide-title">Environmental Pollution</h1>
+                    <h2 class="vocabulary-title" id="slide-3-title">Word Notes</h2>
+                    <table class="vocabulary-table" role="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">English Word</th>
+                                <th scope="col">Bengali Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Manners</td>
+                                <td class="vocabulary-bengali">আচরণ</td>
+                            </tr>
+                            <tr>
+                                <td>Respect</td>
+                                <td class="vocabulary-bengali">সম্মান</td>
+                            </tr>
+                            <tr>
+                                <td>Polite</td>
+                                <td class="vocabulary-bengali">ভদ্র</td>
+                            </tr>
+                            <tr>
+                                <td>Upbringing</td>
+                                <td class="vocabulary-bengali">লালন-পালন</td>
+                            </tr>
+                            <tr>
+                                <td>Society</td>
+                                <td class="vocabulary-bengali">সমাজ</td>
+                            </tr>
+                            <tr>
+                                <td>Responsible</td>
+                                <td class="vocabulary-bengali">দায়িত্বশীল</td>
+                            </tr>
+                            <tr>
+                                <td>Community</td>
+                                <td class="vocabulary-bengali">সম্প্রদায়</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Slide 4 - Environmental Pollution (English) -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-4-title">
+                <div class="slide-content">
+                    <div class="language-label">English - Simple Version</div>
+                    <h1 class="slide-title" id="slide-4-title">Environmental Pollution</h1>
                     <div class="slide-text">
-                        Environmental pollution is a serious problem that harms our air, water, and soil. Smoke from factories and vehicles makes the air dirty, while plastic waste and chemicals pollute rivers and ponds. When the environment becomes polluted, it affects the health of humans, animals, and plants. We must keep our surroundings clean, plant more trees, and use less plastic. Protecting nature is our duty because a clean environment ensures a healthy life for everyone. Pollution leads to various diseases and disturbs the ecological balance. It is crucial to adopt sustainable practices and spread awareness about environmental conservation to protect our planet for future generations.
+                        Environmental pollution is a big problem that hurts our air, water, and land. Smoke from factories and cars makes the air dirty. Plastic waste and chemicals make rivers and ponds dirty. When our environment gets polluted, it affects the health of people, animals, and plants. We must keep our areas clean, plant more trees, and use less plastic. Protecting nature is our job because a clean environment gives everyone a healthy life. Pollution causes many sicknesses and upsets nature's balance. We need to use earth-friendly ways and teach others about saving our environment to protect our world for future children.
                         
                         <br><br>
-                        The main types of pollution include air pollution, water pollution, soil pollution, noise pollution, and light pollution. Each type has severe consequences on our health and the environment. Air pollution can cause respiratory diseases, while water pollution leads to waterborne illnesses. Soil pollution affects agriculture and food safety. We can combat pollution by reducing waste, recycling materials, using public transportation, and supporting environmental protection initiatives. Every small action counts in preserving our planet.
+                        The main types of pollution are air pollution, water pollution, land pollution, noise pollution, and light pollution. Each type badly affects our health and environment. Dirty air can cause breathing problems. Dirty water can make people sick from water diseases. Dirty land affects farming and food safety. We can fight pollution by making less waste, reusing things, using buses and trains, and helping projects that protect the environment. Every small action helps save our planet.
                     </div>
                 </div>
             </div>
             
-            <!-- Slide 4 - Environmental Pollution (Bengali) -->
-            <div class="slide">
+            <!-- Slide 5 - Environmental Pollution (Bengali) -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-5-title">
                 <div class="slide-content">
-                    <div class="language-label">বাংলা</div>
-                    <h1 class="slide-title">পরিবেশ দূষণ</h1>
+                    <div class="language-label">বাংলা - সরল সংস্করণ</div>
+                    <h1 class="slide-title" id="slide-5-title">পরিবেশ দূষণ</h1>
                     <div class="bengali-text">
-                        পরিবেশ দূষণ একটি গুরুতর সমস্যা যা আমাদের বায়ু, জল ও মাটিকে ক্ষতিগ্রস্ত করে। কারখানা ও যানবাহন থেকে নির্গত ধোঁয়া বায়ুকে দূষিত করে, অন্যদিকে প্লাস্টিক বর্জ্য ও রাসায়নিক পদার্থ নদী ও পুকুরকে দূষিত করে। যখন পরিবেশ দূষিত হয়, তখন এটি মানুষ, প্রাণী ও উদ্ভিদের স্বাস্থ্যকে প্রভাবিত করে। আমাদের আমাদের চারপাশ পরিষ্কার রাখতে হবে, আরও গাছ লাগাতে হবে এবং কম প্লাস্টিক ব্যবহার করতে হবে। প্রকৃতিকে রক্ষা করা আমাদের কর্তব্য কারণ একটি পরিষ্কার পরিবেশ সবার জন্য স্বাস্থ্যকর জীবন নিশ্চিত করে।
+                        পরিবেশ দূষণ একটি বড় সমস্যা যা আমাদের বাতাস, জল এবং মাটিকে ক্ষতি করে। কারখানা এবং গাড়ি থেকে ধোঁয়া বাতাসকে নোংরা করে। প্লাস্টিকের আবর্জনা এবং রাসায়নিক নদী এবং পুকুরকে নোংরা করে। যখন আমাদের পরিবেশ দূষিত হয়, তখন এটি মানুষ, প্রাণী এবং গাছের স্বাস্থ্যকে প্রভাবিত করে। আমাদের আমাদের এলাকাগুলো পরিষ্কার রাখতে হবে, আরও গাছ লাগাতে হবে এবং কম প্লাস্টিক ব্যবহার করতে হবে। প্রকৃতিকে রক্ষা করা আমাদের দায়িত্ব কারণ একটি পরিষ্কার পরিবেশ সবার জন্য একটি স্বাস্থ্যকর জীবন দেয়। দূষণ অনেক রোগ সৃষ্টি করে এবং প্রকৃতির ভারসাম্য নষ্ট করে। আমাদের পৃথিবী-বান্ধব উপায় ব্যবহার করতে হবে এবং ভবিষ্যতের শিশুদের জন্য আমাদের বিশ্বকে রক্ষা করতে পরিবেশ বাঁচাতে অন্যদের শেখাতে হবে।
                         
                         <br><br>
-                        দূষণের প্রধান প্রকারগুলির মধ্যে রয়েছে বায়ু দূষণ, জল দূষণ, মাটি দূষণ, শব্দ দূষণ এবং আলো দূষণ। প্রতিটি প্রকারের আমাদের স্বাস্থ্য ও পরিবেশের উপর গুরুতর প্রভাব রয়েছে। বায়ু দূষণ শ্বাসযন্ত্রের রোগ সৃষ্টি করতে পারে, অন্যদিকে জল দূষণ জলবাহিত রোগের দিকে নিয়ে যায়। মাটি দূষণ কৃষি ও খাদ্য নিরাপত্তাকে প্রভাবিত করে। আমরা বর্জ্য হ্রাস করে, উপকরণ পুনর্ব্যবহার করে, গণপরিবহন ব্যবহার করে এবং পরিবেশ সুরক্ষা উদ্যোগগুলো সমর্থন করে দূষণের বিরুদ্ধে লড়াই করতে পারি। আমাদের গ্রহ সংরক্ষণে প্রতিটি ছোট পদক্ষেপ গুরুত্বপূর্ণ।
+                        দূষণের প্রধান প্রকারগুলি হল বায়ু দূষণ, জল দূষণ, ভূমি দূষণ, শব্দ দূষণ এবং আলো দূষণ। প্রতিটি প্রকার আমাদের স্বাস্থ্য এবং পরিবেশকে খারাপভাবে প্রভাবিত করে। নোংরা বাতাস শ্বাস-প্রশ্বাসের সমস্যা সৃষ্টি করতে পারে। নোংরা জল মানুষকে জলবাহিত রোগ থেকে অসুস্থ করতে পারে। নোংরা জমি কৃষিকাজ এবং খাদ্য নিরাপত্তাকে প্রভাবিত করে। আমরা কম বর্জ্য তৈরি করে, জিনিসপত্র পুনরায় ব্যবহার করে, বাস এবং ট্রেন ব্যবহার করে, এবং পরিবেশ রক্ষা করে এমন প্রকল্পগুলিতে সাহায্য করে দূষণের বিরুদ্ধে লড়াই করতে পারি। প্রতিটি ছোট কাজ আমাদের গ্রহকে বাঁচাতে সাহায্য করে।
                     </div>
                 </div>
             </div>
             
-            <!-- Slide 5 - Ideal Student (English) -->
-            <div class="slide">
+            <!-- Slide 6 - Environmental Pollution Vocabulary -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-6-title">
                 <div class="slide-content">
-                    <div class="language-label">English</div>
-                    <h1 class="slide-title">Ideal Student</h1>
+                    <h2 class="vocabulary-title" id="slide-6-title">Word Notes</h2>
+                    <table class="vocabulary-table" role="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">English Word</th>
+                                <th scope="col">Bengali Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Pollution</td>
+                                <td class="vocabulary-bengali">দূষণ</td>
+                            </tr>
+                            <tr>
+                                <td>Environment</td>
+                                <td class="vocabulary-bengali">পরিবেশ</td>
+                            </tr>
+                            <tr>
+                                <td>Chemicals</td>
+                                <td class="vocabulary-bengali">রাসায়নিক পদার্থ</td>
+                            </tr>
+                            <tr>
+                                <td>Balance</td>
+                                <td class="vocabulary-bengali">ভারসাম্য</td>
+                            </tr>
+                            <tr>
+                                <td>Waste</td>
+                                <td class="vocabulary-bengali">বর্জ্য</td>
+                            </tr>
+                            <tr>
+                                <td>Reuse</td>
+                                <td class="vocabulary-bengali">পুনরায় ব্যবহার</td>
+                            </tr>
+                            <tr>
+                                <td>Planet</td>
+                                <td class="vocabulary-bengali">গ্রহ</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Slide 7 - Ideal Student (English) -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-7-title">
+                <div class="slide-content">
+                    <div class="language-label">English - Simple Version</div>
+                    <h1 class="slide-title" id="slide-7-title">Ideal Student</h1>
                     <div class="slide-text">
-                        An ideal student is disciplined, honest, and eager to learn. They pay attention in class, complete their homework on time, and ask questions to clear their doubts. They respect their teachers and classmates and behave well inside and outside school. An ideal student also takes part in sports and other activities to stay active and confident. By managing time well and working hard, they set a good example for others and move closer to success. They balance academics with extracurricular activities and develop a well-rounded personality. An ideal student understands the value of education and strives to achieve their goals with dedication and perseverance.
+                        An ideal student follows rules, is honest, and loves to learn. They pay attention in class, finish homework on time, and ask questions to understand better. They respect their teachers and friends and behave well in school and outside. An ideal student also joins sports and other activities to stay healthy and confident. By using time well and working hard, they set a good example for others and get closer to success. They balance school work with other activities and grow into a complete person. An ideal student knows the value of education and tries to reach their goals with hard work and not giving up.
                         
                         <br><br>
-                        Beyond academic excellence, an ideal student possesses qualities like curiosity, creativity, and critical thinking. They are not afraid to challenge themselves and learn from their mistakes. An ideal student also demonstrates leadership skills, empathy towards others, and a sense of social responsibility. They participate in community service and understand their role in making the world a better place. The habits and values cultivated during student life lay the foundation for a successful and meaningful future.
+                        Besides doing well in studies, an ideal student has curiosity, creativity, and good thinking skills. They are not scared to try hard things and learn from their mistakes. An ideal student also shows leadership, cares for others, and feels responsible toward society. They help in community work and understand their part in making the world better. The habits and values learned during student life build the base for a successful and meaningful future.
                     </div>
                 </div>
             </div>
             
-            <!-- Slide 6 - Ideal Student (Bengali) -->
-            <div class="slide">
+            <!-- Slide 8 - Ideal Student (Bengali) -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-8-title">
                 <div class="slide-content">
-                    <div class="language-label">বাংলা</div>
-                    <h1 class="slide-title">আদর্শ শিক্ষার্থী</h1>
+                    <div class="language-label">বাংলা - সরল সংস্করণ</div>
+                    <h1 class="slide-title" id="slide-8-title">আদর্শ শিক্ষার্থী</h1>
                     <div class="bengali-text">
-                        একজন আদর্শ শিক্ষার্থী শৃঙ্খলাবদ্ধ, সৎ ও শিখতে আগ্রহী। তারা ক্লাসে মনোযোগ দেয়, সময়মতো তাদের বাড়ির কাজ সম্পন্ন করে এবং তাদের সন্দেহ দূর করতে প্রশ্ন জিজ্ঞাসা করে। তারা তাদের শিক্ষক ও সহপাঠীদের সম্মান করে এবং স্কুলের ভিতরে ও বাইরে ভালো আচরণ করে। একজন আদর্শ শিক্ষার্থী সক্রিয় ও আত্মবিশ্বাসী থাকার জন্য খেলাধুলা ও অন্যান্য কার্যক্রমেও অংশগ্রহণ করে। সময় ভালোভাবে পরিচালনা করে এবং কঠোর পরিশ্রম করে তারা অন্যদের জন্য একটি ভালো উদাহরণ স্থাপন করে এবং সাফল্যের কাছাকাছি পৌঁছায়।
+                        একজন আদর্শ শিক্ষার্থী নিয়ম মেনে চলে, সৎ হয় এবং শিখতে ভালোবাসে। তারা ক্লাসে মনোযোগ দেয়, সময়মতো বাড়ির কাজ শেষ করে এবং আরও ভালোভাবে বোঝার জন্য প্রশ্ন জিজ্ঞাসা করে। তারা তাদের শিক্ষক এবং বন্ধুদের সম্মান করে এবং স্কুলে এবং বাইরে ভালো আচরণ করে। একজন আদর্শ শিক্ষার্থী খেলাধুলা এবং অন্যান্য কার্যক্রমেও অংশগ্রহণ করে যাতে তারা সুস্থ এবং আত্মবিশ্বাসী থাকে। সময় ভালোভাবে ব্যবহার করে এবং কঠোর পরিশ্রম করে, তারা অন্যদের জন্য একটি ভালো উদাহরণ স্থাপন করে এবং সাফল্যের কাছাকাছি পৌঁছায়। তারা স্কুলের কাজ এবং অন্যান্য কার্যক্রমের মধ্যে ভারসাম্য বজায় রাখে এবং একটি সম্পূর্ণ ব্যক্তিতে পরিণত হয়। একজন আদর্শ শিক্ষার্থী শিক্ষার মূল্য জানে এবং কঠোর পরিশ্রম এবং হাল না ছেড়ে তাদের লক্ষ্যে পৌঁছানোর চেষ্টা করে।
                         
                         <br><br>
-                        একাডেমিক সাফল্যের বাইরে, একজন আদর্শ শিক্ষার্থীর মধ্যে কৌতূহল, সৃজনশীলতা ও সমালোচনামূলক চিন্তাভাবনার মতো গুণাবলী থাকে। তারা নিজেদের চ্যালেঞ্জ করতে এবং তাদের ভুলগুলি থেকে শিখতে ভয় পায় না। একজন আদর্শ শিক্ষার্থী নেতৃত্বের দক্ষতা, অন্যদের প্রতি সহানুভূতি এবং সামাজিক দায়িত্ববোধও প্রদর্শন করে। তারা সম্প্রদায় সেবায় অংশগ্রহণ করে এবং বিশ্বকে একটি ভালো জায়গা করতে তাদের ভূমিকা বোঝে। শিক্ষার্থী জীবনে গড়ে ওঠা অভ্যাস ও মূল্যবোধ একটি সফল ও অর্থপূর্ণ ভবিষ্যতের ভিত্তি স্থাপন করে।
+                        পড়াশোনায় ভালো করার পাশাপাশি, একজন আদর্শ শিক্ষার্থীর কৌতূহল, সৃজনশীলতা এবং ভালো চিন্তাভাবনার দক্ষতা থাকে। তারা কঠিন জিনিস চেষ্টা করতে ভয় পায় না এবং তাদের ভুলগুলি থেকে শেখে। একজন আদর্শ শিক্ষার্থী নেতৃত্বও দেখায়, অন্যদের যত্ন নেয় এবং সমাজের প্রতি দায়িত্ববোধ অনুভব করে। তারা সম্প্রদায়ের কাজে সাহায্য করে এবং বিশ্বকে আরও ভালো করতে তাদের ভূমিকা বোঝে। শিক্ষার্থী জীবনে শেখা অভ্যাস এবং মূল্যবোধ একটি সফল এবং অর্থপূর্ণ ভবিষ্যতের ভিত্তি তৈরি করে।
                     </div>
+                </div>
+            </div>
+            
+            <!-- Slide 9 - Ideal Student Vocabulary -->
+            <div class="slide" role="tabpanel" aria-labelledby="slide-9-title">
+                <div class="slide-content">
+                    <h2 class="vocabulary-title" id="slide-9-title">Word Notes</h2>
+                    <table class="vocabulary-table" role="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">English Word</th>
+                                <th scope="col">Bengali Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Disciplined</td>
+                                <td class="vocabulary-bengali">শৃঙ্খলাবদ্ধ</td>
+                            </tr>
+                            <tr>
+                                <td>Curiosity</td>
+                                <td class="vocabulary-bengali">কৌতূহল</td>
+                            </tr>
+                            <tr>
+                                <td>Creativity</td>
+                                <td class="vocabulary-bengali">সৃজনশীলতা</td>
+                            </tr>
+                            <tr>
+                                <td>Leadership</td>
+                                <td class="vocabulary-bengali">নেতৃত্ব</td>
+                            </tr>
+                            <tr>
+                                <td>Responsibility</td>
+                                <td class="vocabulary-bengali">দায়িত্ব</td>
+                            </tr>
+                            <tr>
+                                <td>Perseverance</td>
+                                <td class="vocabulary-bengali">অধ্যবসায়</td>
+                            </tr>
+                            <tr>
+                                <td>Foundation</td>
+                                <td class="vocabulary-bengali">ভিত্তি</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
         
-        <div class="slider-indicators">
-            <div class="indicator active" onclick="goToSlide(0)"></div>
-            <div class="indicator" onclick="goToSlide(1)"></div>
-            <div class="indicator" onclick="goToSlide(2)"></div>
-            <div class="indicator" onclick="goToSlide(3)"></div>
-            <div class="indicator" onclick="goToSlide(4)"></div>
-            <div class="indicator" onclick="goToSlide(5)"></div>
+        <!-- Slide Indicators -->
+        <div class="slider-indicators" role="tablist" aria-label="Slide navigation">
+            <button class="indicator active" onclick="goToSlide(0)" role="tab" aria-label="Go to slide 1" aria-selected="true" tabindex="0"></button>
+            <button class="indicator" onclick="goToSlide(1)" role="tab" aria-label="Go to slide 2" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(2)" role="tab" aria-label="Go to slide 3" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(3)" role="tab" aria-label="Go to slide 4" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(4)" role="tab" aria-label="Go to slide 5" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(5)" role="tab" aria-label="Go to slide 6" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(6)" role="tab" aria-label="Go to slide 7" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(7)" role="tab" aria-label="Go to slide 8" aria-selected="false" tabindex="-1"></button>
+            <button class="indicator" onclick="goToSlide(8)" role="tab" aria-label="Go to slide 9" aria-selected="false" tabindex="-1"></button>
         </div>
     </div>
 
     <script>
+        // ===== VARIABLES =====
         const sliderTrack = document.getElementById('sliderTrack');
+        const slides = document.querySelectorAll('.slide');
         const indicators = document.querySelectorAll('.indicator');
+        const progressBar = document.getElementById('progressBar');
+        const pageCounter = document.getElementById('pageCounter');
+        const currentPageSpan = document.getElementById('currentPage');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const autoplayBtn = document.getElementById('autoplayBtn');
+        const autoplayText = document.getElementById('autoplayText');
+        
         let currentSlide = 0;
-        const totalSlides = 6; // Updated to 6 slides
+        const totalSlides = 9;
+        let autoplayInterval = null;
+        let isAutoplayActive = false;
+        let isScrolling = false;
+        const AUTOPLAY_DURATION = 5000; // 5 seconds per slide
 
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading overlay
+            setTimeout(() => {
+                loadingOverlay.classList.add('hidden');
+            }, 500);
+
+            // Create animated bubbles
+            createBubbles();
+
+            // Load saved slide position
+            loadSlidePosition();
+
+            // Initialize accessibility
+            updateAccessibility();
+
+            // Set up autoplay if it was active
+            const savedAutoplay = localStorage.getItem('autoplayActive');
+            if (savedAutoplay === 'true') {
+                startAutoplay();
+            }
+        });
+
+        // ===== NAVIGATION FUNCTIONS =====
         function nextSlide() {
             if (currentSlide < totalSlides - 1) {
                 currentSlide++;
-                updateSlider();
             } else {
-                // Loop back to first slide
                 currentSlide = 0;
-                updateSlider();
             }
+            updateSlider();
         }
 
         function prevSlide() {
             if (currentSlide > 0) {
                 currentSlide--;
-                updateSlider();
             } else {
-                // Loop to last slide
                 currentSlide = totalSlides - 1;
-                updateSlider();
             }
+            updateSlider();
         }
 
         function goToSlide(slideIndex) {
@@ -477,21 +970,235 @@
         }
 
         function updateSlider() {
-            // Move the slider track
+            // Update slider position using transform for better performance
             sliderTrack.style.transform = `translateX(-${currentSlide * 100}vw)`;
             
+            // Update active states
+            slides.forEach((slide, index) => {
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
             // Update indicators
             indicators.forEach((indicator, index) => {
                 if (index === currentSlide) {
                     indicator.classList.add('active');
+                    indicator.setAttribute('aria-selected', 'true');
+                    indicator.setAttribute('tabindex', '0');
                 } else {
                     indicator.classList.remove('active');
+                    indicator.setAttribute('aria-selected', 'false');
+                    indicator.setAttribute('tabindex', '-1');
                 }
             });
+
+            // Update progress bar
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+
+            // Update page counter
+            currentPageSpan.textContent = currentSlide + 1;
+
+            // Update accessibility
+            updateAccessibility();
+
+            // Save position to localStorage
+            saveSlidePosition();
+
+            // Reset autoplay timer
+            if (isAutoplayActive) {
+                restartAutoplay();
+            }
         }
 
-        // Create animated bubbles
-        document.addEventListener('DOMContentLoaded', function() {
+        // ===== AUTOPLAY FUNCTIONS =====
+        function toggleAutoplay() {
+            if (isAutoplayActive) {
+                stopAutoplay();
+            } else {
+                startAutoplay();
+            }
+        }
+
+        function startAutoplay() {
+            isAutoplayActive = true;
+            autoplayText.textContent = '⏸ Auto';
+            autoplayBtn.classList.add('active');
+            autoplayBtn.setAttribute('aria-label', 'Pause autoplay');
+            
+            autoplayInterval = setInterval(() => {
+                nextSlide();
+            }, AUTOPLAY_DURATION);
+
+            localStorage.setItem('autoplayActive', 'true');
+        }
+
+        function stopAutoplay() {
+            isAutoplayActive = false;
+            autoplayText.textContent = '▶ Auto';
+            autoplayBtn.classList.remove('active');
+            autoplayBtn.setAttribute('aria-label', 'Play autoplay');
+            
+            if (autoplayInterval) {
+                clearInterval(autoplayInterval);
+                autoplayInterval = null;
+            }
+
+            localStorage.setItem('autoplayActive', 'false');
+        }
+
+        function restartAutoplay() {
+            if (autoplayInterval) {
+                clearInterval(autoplayInterval);
+            }
+            autoplayInterval = setInterval(() => {
+                nextSlide();
+            }, AUTOPLAY_DURATION);
+        }
+
+        // Pause autoplay on hover
+        document.querySelector('.slider-container').addEventListener('mouseenter', () => {
+            if (isAutoplayActive && autoplayInterval) {
+                clearInterval(autoplayInterval);
+            }
+        });
+
+        document.querySelector('.slider-container').addEventListener('mouseleave', () => {
+            if (isAutoplayActive) {
+                restartAutoplay();
+            }
+        });
+
+        // ===== ACCESSIBILITY FUNCTIONS =====
+        function updateAccessibility() {
+            // Announce slide change to screen readers
+            const slideTitle = slides[currentSlide].querySelector('.slide-title, .vocabulary-title');
+            if (slideTitle) {
+                const announcement = `Slide ${currentSlide + 1} of ${totalSlides}: ${slideTitle.textContent}`;
+                announceToScreenReader(announcement);
+            }
+        }
+
+        function announceToScreenReader(message) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'status');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.className = 'sr-only';
+            announcement.textContent = message;
+            document.body.appendChild(announcement);
+            
+            setTimeout(() => {
+                document.body.removeChild(announcement);
+            }, 1000);
+        }
+
+        // ===== STORAGE FUNCTIONS =====
+        function saveSlidePosition() {
+            localStorage.setItem('currentSlide', currentSlide);
+        }
+
+        function loadSlidePosition() {
+            const savedSlide = localStorage.getItem('currentSlide');
+            if (savedSlide !== null) {
+                currentSlide = parseInt(savedSlide);
+                updateSlider();
+            }
+        }
+
+        // ===== KEYBOARD NAVIGATION =====
+        document.addEventListener('keydown', function(event) {
+            // Prevent navigation if user is typing or scrolling content
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            switch(event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    prevSlide();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    nextSlide();
+                    break;
+                case 'Home':
+                    event.preventDefault();
+                    goToSlide(0);
+                    break;
+                case 'End':
+                    event.preventDefault();
+                    goToSlide(totalSlides - 1);
+                    break;
+                case ' ':
+                case 'Spacebar':
+                    event.preventDefault();
+                    toggleAutoplay();
+                    break;
+            }
+        });
+
+        // ===== TOUCH/SWIPE SUPPORT =====
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartTime = 0;
+        let touchEndTime = 0;
+
+        // Detect if user is scrolling content
+        let scrollStartY = 0;
+        let isVerticalScroll = false;
+
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartTime = Date.now();
+            scrollStartY = e.changedTouches[0].screenY;
+            isVerticalScroll = false;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', e => {
+            const touchMoveY = e.changedTouches[0].screenY;
+            const verticalDiff = Math.abs(touchMoveY - scrollStartY);
+            const horizontalDiff = Math.abs(e.changedTouches[0].screenX - touchStartX);
+            
+            // If user is scrolling vertically more than horizontally, it's a scroll
+            if (verticalDiff > horizontalDiff && verticalDiff > 10) {
+                isVerticalScroll = true;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndTime = Date.now();
+            
+            // Don't navigate if user was scrolling content
+            if (!isVerticalScroll) {
+                handleSwipe();
+            }
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const swipeDistance = touchEndX - touchStartX;
+            const swipeTime = touchEndTime - touchStartTime;
+            const swipeVelocity = Math.abs(swipeDistance) / swipeTime;
+            
+            // Quick swipes or long swipes trigger navigation
+            if (Math.abs(swipeDistance) > swipeThreshold || swipeVelocity > 0.5) {
+                if (swipeDistance < 0) {
+                    // Swiped left - next slide
+                    nextSlide();
+                } else {
+                    // Swiped right - previous slide
+                    prevSlide();
+                }
+            }
+        }
+
+        // ===== BUBBLE ANIMATION =====
+        function createBubbles() {
             const bubblesContainer = document.getElementById('bubbles');
             const bubbleCount = 15;
             
@@ -504,7 +1211,7 @@
                 bubble.style.width = `${size}px`;
                 bubble.style.height = `${size}px`;
                 
-                // Random position
+                // Random horizontal position
                 bubble.style.left = `${Math.random() * 100}vw`;
                 
                 // Random animation delay and duration
@@ -519,41 +1226,62 @@
                 
                 bubblesContainer.appendChild(bubble);
             }
-        });
-
-        // Add keyboard navigation
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'ArrowLeft') {
-                prevSlide();
-            } else if (event.key === 'ArrowRight') {
-                nextSlide();
-            }
-        });
-
-        // Add swipe support for mobile
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        document.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-
-        document.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        });
-
-        function handleSwipe() {
-            const swipeThreshold = 50;
-            
-            if (touchEndX < touchStartX - swipeThreshold) {
-                nextSlide();
-            }
-            
-            if (touchEndX > touchStartX + swipeThreshold) {
-                prevSlide();
-            }
         }
+
+        // ===== PREVENT CONTENT SCROLL INTERFERENCE =====
+        document.querySelectorAll('.slide-content').forEach(content => {
+            let isScrollingContent = false;
+
+            content.addEventListener('scroll', () => {
+                isScrollingContent = true;
+                setTimeout(() => {
+                    isScrollingContent = false;
+                }, 100);
+            });
+
+            // Prevent click areas from interfering when scrolling
+            content.addEventListener('touchstart', () => {
+                document.querySelectorAll('.click-area').forEach(area => {
+                    area.style.pointerEvents = 'none';
+                });
+            });
+
+            content.addEventListener('touchend', () => {
+                setTimeout(() => {
+                    document.querySelectorAll('.click-area').forEach(area => {
+                        area.style.pointerEvents = 'auto';
+                    });
+                }, 300);
+            });
+        });
+
+        // ===== PERFORMANCE OPTIMIZATION =====
+        // Use Intersection Observer for better performance
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.willChange = 'transform, opacity';
+                    } else {
+                        entry.target.style.willChange = 'auto';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            slides.forEach(slide => observer.observe(slide));
+        }
+
+        // ===== VISIBILITY CHANGE =====
+        // Pause autoplay when tab is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isAutoplayActive) {
+                if (autoplayInterval) {
+                    clearInterval(autoplayInterval);
+                }
+            } else if (!document.hidden && isAutoplayActive) {
+                restartAutoplay();
+            }
+        });
     </script>
 </body>
 </html>
